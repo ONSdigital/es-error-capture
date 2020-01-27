@@ -9,8 +9,6 @@ from moto import mock_sns, mock_sqs
 
 import runtime_error_capture  # noqa E402
 
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + "/.."))
-
 
 class TestRuntimeErrorCapture(unittest.TestCase):
 

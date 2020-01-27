@@ -25,7 +25,7 @@ custom:
   accountId: ${self:custom.accounts.account-id}
 
 functions:
-  deploy-config-loader:
+  deploy-error-handler:
     name: runtime_error_capture
     handler: runtime_error_capture.lambda_handler
     package:
