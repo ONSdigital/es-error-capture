@@ -1,20 +1,18 @@
 import os  # noqa F401
-from moto import mock_sqs, mock_sns
-import boto3
-import unittest.mock as mock
-import unittest
 import sys
+import unittest
+import unittest.mock as mock
 
-import time
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + "/.."))
+import boto3
+from es_aws_functions import exception_classes
+from moto import mock_sns, mock_sqs
+
 import runtime_error_capture  # noqa E402
+
+sys.path.append(os.path.realpath(os.path.dirname(__file__) + "/.."))
 
 
 class TestRuntimeErrorCapture(unittest.TestCase):
-
-    def test_get_traceback(self):
-        traceback = runtime_error_capture._get_traceback(Exception("Mike"))
-        assert traceback == "Exception: Mike\n"
 
     @mock_sns
     def test_sns_send(self):
@@ -45,36 +43,41 @@ class TestRuntimeErrorCapture(unittest.TestCase):
         topic_arn = topic["TopicArn"]
         with mock.patch.dict(
                 runtime_error_capture.os.environ,
-                {"arn": topic_arn, "queue_url": queue_url}
+                {"sns_topic_arn": topic_arn}
         ):
             indata = {
-                  "data": {
-                    "lambdaresult": {
-                      "error": "Oh no, an error!"
-                    }
-                  }
-                }
+                  "Cause": "Bad stuff",
+                  "run_id": "moo",
+                  "queue_url": queue_url}
 
             runtime_error_capture.lambda_handler(indata, "")
-            time.sleep(6)
-            message = sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=10)
-            assert('messages' not in message)
+            error = ''
+            try:
+                sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=10)
+            except Exception as e:
+                error = e.args
+                # Extract e for use in finally block
+                # so if it doesnt throw exception test will fail
+            finally:
+
+                assert "The specified queue does not exist" in str(error)
 
     @mock_sqs
     def test_marshmallow_raises_exception(self):
         sqs = boto3.resource("sqs", region_name="eu-west-2")
         sqs.create_queue(QueueName="test_queue")
         queue_url = sqs.get_queue_by_name(QueueName="test_queue").url
-        # Method
-        with mock.patch.dict(
-                runtime_error_capture.os.environ, {"queue_url": queue_url}
-        ):
-            out = runtime_error_capture.lambda_handler(
-                {"RuntimeVariables": {"checkpoint": 666}}, None
+
+        with unittest.TestCase.assertRaises(
+                self, exception_classes.LambdaFailure) as exc_info:
+            runtime_error_capture.lambda_handler(
+                {"Cause": "Bad stuff",
+                 "run_id": "moo",
+                 "queue_url": queue_url
+                 }, None
             )
-            self.assertRaises(ValueError)
-            assert(out['error'].__contains__
-                   ("""ValueError: Error validating environment params:"""))
+        assert "Error validating environment" \
+               in exc_info.exception.error_message
 
     @mock_sqs
     def test_catch_method_exception(self):
@@ -83,14 +86,17 @@ class TestRuntimeErrorCapture(unittest.TestCase):
         with mock.patch.dict(
                 runtime_error_capture.os.environ,
                 {
-                "arn": "Arrgh",
-                "queue_url": "responder_id"
+                "sns_topic_arn": "Arrgh"
                  },
         ):
-            with mock.patch("runtime_error_capture.logging.info") as mocked:
+            with mock.patch("runtime_error_capture.EnvironSchema.load") as mocked:
                 mocked.side_effect = Exception("SQS Failure")
-                response = runtime_error_capture.lambda_handler(
-                    "", None
-                )
-                assert "success" in response
-                assert response["success"] is False
+                with unittest.TestCase.assertRaises(
+                        self, exception_classes.LambdaFailure) as exc_info:
+                    runtime_error_capture.lambda_handler(
+                        {"Cause": "Bad stuff",
+                         "run_id": "moo",
+                         "queue_url": "abc"}, None
+                    )
+                assert "General Error" \
+                       in exc_info.exception.error_message

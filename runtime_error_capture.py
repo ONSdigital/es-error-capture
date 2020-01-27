@@ -1,31 +1,15 @@
 import json
-import boto3
-import traceback
-import os
-from marshmallow import Schema, fields
 import logging
+import os
 
-# Set up clients
-sns = boto3.client('sns', region_name='eu-west-2')
-sqs = boto3.client('sqs', region_name='eu-west-2')
+import boto3
+from botocore.exceptions import ClientError
+from es_aws_functions import exception_classes
+from marshmallow import Schema, fields
 
 
 class EnvironSchema(Schema):
-    queue_url = fields.Str(required=True)
-    arn = fields.Str(required=True)
-
-
-def _get_traceback(exception):
-    """
-    Given an exception, returns the traceback as a string.
-    :param exception: Exception object
-    :return: string
-    """
-    return ''.join(
-        traceback.format_exception(
-            etype=type(exception), value=exception, tb=exception.__traceback__
-        )
-    )
+    sns_topic_arn = fields.Str(required=True)
 
 
 def send_sns_message(error_message, arn):
@@ -38,7 +22,7 @@ def send_sns_message(error_message, arn):
 
     :return: None
     """
-
+    sns = boto3.client('sns', region_name='eu-west-2')
     sns_message = {
         "success": False,
         "message": error_message
@@ -51,30 +35,76 @@ def send_sns_message(error_message, arn):
 
 
 def lambda_handler(event, context):
+    current_module = "Error Capture"
+    # Define run_id outside of try block
+    run_id = 0
+    logger = logging.getLogger("Error_capture")
+    logger.setLevel(10)
+    log_message = ''
+    error_message = ''
     try:
-        logger = logging.getLogger("Error_capture")
         logger.info("Entered Error Handler")
+        # Retrieve run_id before input validation
+        # Because it is used in exception handling
+        run_id = event['run_id']
+        queue_url = event["queue_url"]
 
         schema = EnvironSchema()
         config, errors = schema.load(os.environ)
         if errors:
             raise ValueError(f"Error validating environment params: {errors}")
         # Environment variables
-        arn = config['arn']
-        queue_url = config["queue_url"]
+        sns_topic_arn = config['sns_topic_arn']
+
+        # Set up client
+        sqs = boto3.client('sqs', region_name='eu-west-2')
 
         # Take the error message from event
-        error_message = event['data']['lambdaresult']['error']
+        runtime_error_message = event['Cause']
         logger.info("Retrieved error message")
+
         # send on to sns
-        send_sns_message(error_message, arn)
+        send_sns_message(runtime_error_message, sns_topic_arn)
         logger.info("Sent error to sns topic")
-        # Purge contents of queue
-        sqs.purge_queue(QueueUrl=queue_url)
-        logger.info("Purged Queue")
-    except Exception as exc:
-        logger.error("Error Handler has failed.")
-        return {
-            "success": False,
-            "error": "Unexpected exception {}".format(_get_traceback(exc))
-        }
+
+        # Delete queue
+        sqs.delete_queue(QueueUrl=queue_url)
+        logger.info("Deleted: " + str(queue_url))
+
+    except ClientError as e:
+        error_message = ("AWS Error in ("
+                         + str(e.response["Error"]["Code"]) + ") "
+                         + current_module + " |- "
+                         + str(e.args)
+                         + " | Run_id: " + str(run_id))
+
+        log_message = error_message + " | Line: " + str(e.__traceback__.tb_lineno)
+
+    except KeyError as e:
+        error_message = ("Key Error in "
+                         + current_module + " |- "
+                         + str(e.args)
+                         + " | Run_id: " + str(run_id)
+                         )
+
+        log_message = error_message + " | Line: " + str(e.__traceback__.tb_lineno)
+
+    except ValueError as e:
+        error_message = ("Blank or empty environment variable in "
+                         + current_module + " |- "
+                         + str(e.args)
+                         + " | Run_id: " + str(run_id))
+
+        log_message = error_message + " | Line: " + str(e.__traceback__.tb_lineno)
+    except Exception as e:
+        error_message = ("General Error in "
+                         + current_module + " ("
+                         + str(type(e)) + ") |- "
+                         + str(e.args)
+                         + " | Run_id: " + str(run_id))
+
+        log_message = error_message + " | Line: " + str(e.__traceback__.tb_lineno)
+    finally:
+        if (len(error_message)) > 0:
+            logger.error(log_message)
+            raise exception_classes.LambdaFailure(error_message)
