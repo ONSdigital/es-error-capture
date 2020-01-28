@@ -4,7 +4,7 @@ import os
 
 import boto3
 from botocore.exceptions import ClientError
-from es_aws_functions import exception_classes
+from es_aws_functions import aws_functions, exception_classes
 from marshmallow import Schema, fields
 
 
@@ -38,7 +38,7 @@ def lambda_handler(event, context):
     current_module = "Error Capture"
     # Define run_id outside of try block
     run_id = 0
-    logger = logging.getLogger("Error_capture")
+    logger = logging.getLogger("Error capture")
     logger.setLevel(10)
     log_message = ''
     error_message = ''
