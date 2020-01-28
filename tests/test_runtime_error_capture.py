@@ -1,5 +1,3 @@
-import os  # noqa F401
-import sys
 import unittest
 import unittest.mock as mock
 

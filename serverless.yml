@@ -1,5 +1,5 @@
 ---
-service: es-config-loader
+service: error-capture
 provider:
   name: aws
   deploymentBucket:
