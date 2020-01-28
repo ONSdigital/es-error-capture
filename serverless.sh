@@ -2,7 +2,7 @@
 
 # Serverless deployment
 
-cd config-loader-deploy-repository
+cd error-capture-deploy-repository
 serverless plugin install --name serverless-latest-layer-version
 echo Packaging serverless bundle...
 serverless package --package pkg
