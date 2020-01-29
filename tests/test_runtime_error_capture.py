@@ -41,10 +41,10 @@ class TestRuntimeErrorCapture(unittest.TestCase):
                 runtime_error_capture.os.environ,
                 {"sns_topic_arn": topic_arn}
         ):
-            indata = {
-                  "Cause": "Bad stuff",
-                  "run_id": "moo",
-                  "queue_url": queue_url}
+            indata = {"error": {"Cause": "Bad stuff"},
+                      "run_id": "moo",
+                      "queue_url": queue_url
+                      }
 
             runtime_error_capture.lambda_handler(indata, "")
             error = ''
@@ -67,7 +67,7 @@ class TestRuntimeErrorCapture(unittest.TestCase):
         with unittest.TestCase.assertRaises(
                 self, exception_classes.LambdaFailure) as exc_info:
             runtime_error_capture.lambda_handler(
-                {"Cause": "Bad stuff",
+                {"error": {"Cause": "Bad stuff"},
                  "run_id": "moo",
                  "queue_url": queue_url
                  }, None

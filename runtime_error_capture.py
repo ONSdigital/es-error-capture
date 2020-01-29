@@ -47,12 +47,15 @@ def lambda_handler(event, context):
         # Retrieve run_id before input validation
         # Because it is used in exception handling
         run_id = event['run_id']
-        queue_url = event["queue_url"]
 
         schema = EnvironSchema()
         config, errors = schema.load(os.environ)
         if errors:
             raise ValueError(f"Error validating environment params: {errors}")
+
+        queue_url = event["queue_url"]
+        error = event['error']
+
         # Environment variables
         sns_topic_arn = config['sns_topic_arn']
 
@@ -60,7 +63,7 @@ def lambda_handler(event, context):
         sqs = boto3.client('sqs', region_name='eu-west-2')
 
         # Take the error message from event
-        runtime_error_message = event['Cause']
+        runtime_error_message = error['Cause']
         logger.info("Retrieved error message")
 
         # send on to sns
