@@ -39,11 +39,12 @@ class TestRuntimeErrorCapture(unittest.TestCase):
         topic_arn = topic["TopicArn"]
         with mock.patch.dict(
                 runtime_error_capture.os.environ,
-                {"sns_topic_arn": topic_arn}
+                {}
         ):
             indata = {"error": {"Cause": "Bad stuff"},
                       "run_id": "moo",
-                      "queue_url": queue_url
+                      "queue_url": queue_url,
+                      "sns_topic_arn": topic_arn
                       }
 
             runtime_error_capture.lambda_handler(indata, "")
@@ -69,7 +70,8 @@ class TestRuntimeErrorCapture(unittest.TestCase):
             runtime_error_capture.lambda_handler(
                 {"error": {"Cause": "Bad stuff"},
                  "run_id": "moo",
-                 "queue_url": queue_url
+                 "queue_url": queue_url,
+                 "sns_topic_arn": "topic_arn"
                  }, None
             )
         assert "Error validating environment" \
@@ -81,18 +83,18 @@ class TestRuntimeErrorCapture(unittest.TestCase):
 
         with mock.patch.dict(
                 runtime_error_capture.os.environ,
-                {
-                "sns_topic_arn": "Arrgh"
-                 },
+                {},
         ):
-            with mock.patch("runtime_error_capture.EnvironSchema.load") as mocked:
+            with mock.patch("runtime_error_capture.boto3.client") as mocked:
                 mocked.side_effect = Exception("SQS Failure")
                 with unittest.TestCase.assertRaises(
                         self, exception_classes.LambdaFailure) as exc_info:
                     runtime_error_capture.lambda_handler(
                         {"Cause": "Bad stuff",
                          "run_id": "moo",
-                         "queue_url": "abc"}, None
+                         "queue_url": "abc",
+                         "sns_topic_arn": "topic_arn"
+                        }, None
                     )
                 assert "General Error" \
                        in exc_info.exception.error_message
