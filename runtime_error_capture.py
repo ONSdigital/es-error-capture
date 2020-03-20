@@ -1,11 +1,9 @@
 import json
 import logging
-import os
 
 import boto3
 from botocore.exceptions import ClientError
 from es_aws_functions import exception_classes
-from marshmallow import Schema, fields
 
 
 def send_sns_message(error_message, arn):
