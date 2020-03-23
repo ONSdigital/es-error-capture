@@ -38,8 +38,6 @@ functions:
       - arn:aws:lambda:eu-west-2:${self:custom.accountId}:layer:dev-es-common-functions:latest
     tags:
       app: results
-    environment:
-      sns_topic_arn: arn:aws:sns:eu-west-2:${self:custom.accountId}:BMIResults
 
 plugins:
   - serverless-latest-layer-version

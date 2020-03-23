@@ -1,15 +1,9 @@
 import json
 import logging
-import os
 
 import boto3
 from botocore.exceptions import ClientError
 from es_aws_functions import exception_classes
-from marshmallow import Schema, fields
-
-
-class EnvironSchema(Schema):
-    sns_topic_arn = fields.Str(required=True)
 
 
 def send_sns_message(error_message, arn):
@@ -48,16 +42,11 @@ def lambda_handler(event, context):
         # Because it is used in exception handling
         run_id = event['run_id']
 
-        schema = EnvironSchema()
-        config, errors = schema.load(os.environ)
-        if errors:
-            raise ValueError(f"Error validating environment params: {errors}")
-
         queue_url = event["queue_url"]
         error = event['error']
 
-        # Environment variables
-        sns_topic_arn = config['sns_topic_arn']
+        # Runtime variables
+        sns_topic_arn = event['sns_topic_arn']
 
         # Set up client
         sqs = boto3.client('sqs', region_name='eu-west-2')
