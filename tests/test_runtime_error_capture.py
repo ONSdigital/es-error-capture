@@ -71,4 +71,4 @@ class TestRuntimeErrorCapture(unittest.TestCase):
                         "error": "mike"
                     }, None
                 )
-            assert "General Error" in exc_info.exception.error_message
+            assert "'Exception'" in exc_info.exception.error_message
