@@ -62,7 +62,7 @@ def lambda_handler(event, context):
         logger.info("Deleted: " + str(queue_url))
     except Exception as e:
         error_message = general_functions.handle_exception(e, current_module,
-                                                           run_id, context)
+                                                           run_id, context,)
     finally:
         if (len(error_message)) > 0:
             logger.error(error_message)

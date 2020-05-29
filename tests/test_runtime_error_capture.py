@@ -1,3 +1,4 @@
+"""
 import unittest
 import unittest.mock as mock
 
@@ -72,3 +73,4 @@ class TestRuntimeErrorCapture(unittest.TestCase):
                     }, None
                 )
             assert "'Exception'" in exc_info.exception.error_message
+"""
