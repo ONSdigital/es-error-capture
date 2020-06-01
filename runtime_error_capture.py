@@ -5,28 +5,6 @@ import boto3
 from es_aws_functions import exception_classes, general_functions
 
 
-def send_sns_message(error_message, arn):
-    """
-    This method is responsible for sending a notification
-    to the specified arn, so that it can be
-    used to relay information for the BPM to use and handle.
-    :param error_message: An error message. - Type: String.
-    :param arn: Arn of the topic to send message to. - Type: String.
-
-    :return: None
-    """
-    sns = boto3.client('sns', region_name='eu-west-2')
-    sns_message = {
-        "success": False,
-        "message": error_message
-    }
-
-    return sns.publish(
-        TargetArn=arn,
-        Message=json.dumps(sns_message)
-    )
-
-
 def lambda_handler(event, context):
     current_module = "Error Capture"
     # Define run_id outside of try block
@@ -50,7 +28,7 @@ def lambda_handler(event, context):
         sqs = boto3.client('sqs', region_name='eu-west-2')
 
         # Take the error message from event
-        runtime_error_message = error['Cause']
+        runtime_error_message = error["Cause"]
         logger.info("Retrieved error message")
 
         # send on to sns
@@ -69,3 +47,25 @@ def lambda_handler(event, context):
             raise exception_classes.LambdaFailure(error_message)
 
     logger.info("Successfully completed module: " + current_module)
+
+
+def send_sns_message(error_message, arn):
+    """
+    This method is responsible for sending a notification
+    to the specified arn, so that it can be
+    used to relay information for the BPM to use and handle.
+    :param error_message: An error message. - Type: String.
+    :param arn: Arn of the topic to send message to. - Type: String.
+
+    :return: None
+    """
+    sns = boto3.client('sns', region_name='eu-west-2')
+    sns_message = {
+        "success": False,
+        "message": error_message
+    }
+
+    return sns.publish(
+        TargetArn=arn,
+        Message=json.dumps(sns_message)
+    )

@@ -55,6 +55,7 @@ class TestRuntimeErrorCapture(unittest.TestCase):
 
             assert "The specified queue does not exist" in str(error)
 
+
     @mock_sqs
     def test_catch_method_exception(self):
         # Method
