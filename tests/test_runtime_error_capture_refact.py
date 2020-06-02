@@ -125,58 +125,28 @@ def test_runtime_error_capture(which_lambda, which_runtime_variables, expected_m
     finally:
         assert expected_message in str(error)
 
-# THIS DOESN'T WORK - THINK I WILL NEED TO REMOVE IT AS CANNOT CHECK SNS.
 
-
-@mock_sns
 @mock_sqs
 @mock.patch("runtime_error_capture.boto3.client")
 @pytest.mark.parametrize(
     "which_lambda,which_runtime_variables,expected_topic",
     [
         (lambda_wrangler_function, method_runtime_variables,
-         "NotARealSNS")
+         "tested error")
     ])
-def test_runtime_error_capture_success(mock_client, which_lambda, which_runtime_variables,
-                                       expected_topic):
+def test_runtime_error_capture_success(mock_client, which_lambda,
+                                       which_runtime_variables, expected_msg):
     """
-
     :param mock_client: Mocked boto3 client.
-    :param which_lambda: runtime_error_capture.
-    :param which_runtime_variables: runtime variables.
-    :param expected_topic: What the topic name should contain.
+    :param which_lambda: runtime_error_capture
+    :param which_runtime_variables: runtime variables declared at start.
+    :param expected_msg: What the topic name should contain.
     :return:
     """
 
-    sqs = boto3.client("sqs", region_name="eu-west-2")
-    sqs.create_queue(QueueName="test_queue")
-    queue_url = sqs.get_queue_url(QueueName="test_queue")['QueueUrl']
-    which_runtime_variables['queue_url'] = queue_url
-
-    sqs.send_message(
-        QueueUrl=queue_url,
-        MessageBody="moo",
-        MessageGroupId="123",
-        MessageDeduplicationId="666"
-    )
-    sns = boto3.client("sns", region_name="eu-west-2")
-    topic = sns.create_topic(Name="bloo")
-    topic_arn = topic["TopicArn"]
-
-    which_runtime_variables['sns_topic_arn'] = topic_arn
-
-    which_lambda.lambda_handler(which_runtime_variables, None)
-
     with mock.patch("runtime_error_capture.send_sns_message") as mocked_sns_queue:
         mocked_sns_queue.return_value = "NotARealSNS"
-        which_lambda.lambda_handler(which_runtime_variables, None)
-        response = mock_client.return_value.start_execution.call_args
+        lambda_wrangler_function.lambda_handler(which_runtime_variables, None)
+        response = mocked_sns_queue.call_args
 
-    assert expected_topic in response
-
-"""
-Also tried with just calling the function and trying to evaluate mock_client without
-mock.patch but with either I cannot reference mock_client.whatever and when I do
-what it returned it NONE.
-
-"""
+    assert expected_msg in response[0][0]
