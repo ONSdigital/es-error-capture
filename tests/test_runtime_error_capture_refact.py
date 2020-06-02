@@ -11,12 +11,12 @@ import boto3
 import runtime_error_capture as lambda_wrangler_function
 
 method_runtime_variables = {
-    'run_id': 'bob',
+    'run_id': "bob",
     "sns_topic_arn": "topic_arn",
     "queue_url": "mock_url",
     "error": {
         "Error": "LambdaFailure",
-        "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested error]}"
+        "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested_for_error]}"
     },
     "RuntimeVariables": {}
 }
@@ -85,7 +85,7 @@ def test_send_sns_message():
     topic_arn = topic["TopicArn"]
 
     result = lambda_wrangler_function.send_sns_message("", topic_arn)
-    assert(result['ResponseMetadata']['HTTPStatusCode'] == 200)
+    assert(result["ResponseMetadata"]["HTTPStatusCode"] == 200)
 
 
 @mock_sns
@@ -99,8 +99,8 @@ def test_send_sns_message():
 def test_runtime_error_capture(which_lambda, which_runtime_variables, expected_message):
     sqs = boto3.client("sqs", region_name="eu-west-2")
     sqs.create_queue(QueueName="test_queue")
-    queue_url = sqs.get_queue_url(QueueName="test_queue")['QueueUrl']
-    which_runtime_variables['queue_url'] = queue_url
+    queue_url = sqs.get_queue_url(QueueName="test_queue")["QueueUrl"]
+    which_runtime_variables["queue_url"] = queue_url
 
     sqs.send_message(
         QueueUrl=queue_url,
@@ -112,7 +112,7 @@ def test_runtime_error_capture(which_lambda, which_runtime_variables, expected_m
     topic = sns.create_topic(Name="bloo")
     topic_arn = topic["TopicArn"]
 
-    which_runtime_variables['sns_topic_arn'] = topic_arn
+    which_runtime_variables["sns_topic_arn"] = topic_arn
 
     which_lambda.lambda_handler(which_runtime_variables, "")
     error = ''
@@ -129,10 +129,10 @@ def test_runtime_error_capture(which_lambda, which_runtime_variables, expected_m
 @mock_sqs
 @mock.patch("runtime_error_capture.boto3.client")
 @pytest.mark.parametrize(
-    "which_lambda,which_runtime_variables,expected_topic",
+    "which_lambda,which_runtime_variables,expected_msg",
     [
         (lambda_wrangler_function, method_runtime_variables,
-         "tested error")
+         "tested_for_error")
     ])
 def test_runtime_error_capture_success(mock_client, which_lambda,
                                        which_runtime_variables, expected_msg):
