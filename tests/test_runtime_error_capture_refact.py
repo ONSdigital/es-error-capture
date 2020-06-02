@@ -130,14 +130,24 @@ def test_runtime_error_capture(which_lambda, which_runtime_variables, expected_m
 
 @mock_sns
 @mock_sqs
+@mock.patch("runtime_error_capture.boto3.client")
 @pytest.mark.parametrize(
     "which_lambda,which_runtime_variables,expected_topic",
     [
         (lambda_wrangler_function, method_runtime_variables,
-         "bloo")
+         "NotARealSNS")
     ])
-def test_runtime_error_capture_success(which_lambda, which_runtime_variables,
+def test_runtime_error_capture_success(mock_client, which_lambda, which_runtime_variables,
                                        expected_topic):
+    """
+
+    :param mock_client: Mocked boto3 client.
+    :param which_lambda: runtime_error_capture.
+    :param which_runtime_variables: runtime variables.
+    :param expected_topic: What the topic name should contain.
+    :return:
+    """
+
     sqs = boto3.client("sqs", region_name="eu-west-2")
     sqs.create_queue(QueueName="test_queue")
     queue_url = sqs.get_queue_url(QueueName="test_queue")['QueueUrl']
@@ -155,6 +165,18 @@ def test_runtime_error_capture_success(which_lambda, which_runtime_variables,
 
     which_runtime_variables['sns_topic_arn'] = topic_arn
 
-    which_lambda.lambda_handler(which_runtime_variables, "")
+    which_lambda.lambda_handler(which_runtime_variables, None)
 
-    assert expected_topic in sns.get_all_topics()
+    with mock.patch("runtime_error_capture.send_sns_message") as mocked_sns_queue:
+        mocked_sns_queue.return_value = "NotARealSNS"
+        which_lambda.lambda_handler(which_runtime_variables, None)
+        response = mock_client.return_value.start_execution.call_args
+
+    assert expected_topic in response
+
+"""
+Also tried with just calling the function and trying to evaluate mock_client without
+mock.patch but with either I cannot reference mock_client.whatever and when I do
+what it returned it NONE.
+
+"""
