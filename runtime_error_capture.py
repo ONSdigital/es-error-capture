@@ -3,6 +3,19 @@ import logging
 
 import boto3
 from es_aws_functions import exception_classes, general_functions
+from marshmallow import EXCLUDE, Schema, fields
+
+
+class RuntimeSchema(Schema):
+    class Meta:
+        unknown = EXCLUDE
+
+    def handle_error(self, e, data, **kwargs):
+        logging.error(f"Error validating environment params: {e}")
+        raise ValueError(f"Error validating environment params: {e}")
+
+    queue_url = fields.Str(required=True)
+    sns_topic_arn = fields.Str(required=True)
 
 
 def lambda_handler(event, context):
@@ -16,16 +29,17 @@ def lambda_handler(event, context):
         logger.info("Entered Error Handler")
         # Retrieve run_id before input validation
         # Because it is used in exception handling
-        run_id = event['run_id']
-
-        queue_url = event["queue_url"]
-        error = event['error']
+        run_id = event["run_id"]
+        error = event["error"]
 
         # Runtime variables
-        sns_topic_arn = event['sns_topic_arn']
+        runtime_variables = RuntimeSchema().load(event)
+        queue_url = runtime_variables["queue_url"]
+        sns_topic_arn = runtime_variables["sns_topic_arn"]
+        logger.info("Validated parameters.")
 
         # Set up client
-        sqs = boto3.client('sqs', region_name='eu-west-2')
+        sqs = boto3.client("sqs", region_name="eu-west-2")
 
         # Take the error message from event
         runtime_error_message = error["Cause"]
@@ -59,7 +73,7 @@ def send_sns_message(error_message, arn):
 
     :return: None
     """
-    sns = boto3.client('sns', region_name='eu-west-2')
+    sns = boto3.client("sns", region_name="eu-west-2")
     sns_message = {
         "success": False,
         "message": error_message

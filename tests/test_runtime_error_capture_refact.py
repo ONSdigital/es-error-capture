@@ -11,7 +11,7 @@ import boto3
 import runtime_error_capture as lambda_wrangler_function
 
 method_runtime_variables = {
-    'run_id': "bob",
+    "run_id": "bob",
     "sns_topic_arn": "topic_arn",
     "queue_url": "mock_url",
     "error": {
@@ -20,9 +20,6 @@ method_runtime_variables = {
     },
     "RuntimeVariables": {}
 }
-
-method_environment_variables = {}
-
 
 ##########################################################################################
 #                                     Generic                                            #
@@ -50,7 +47,7 @@ def test_client_error(which_lambda, which_runtime_variables,
     "expected_message,assertion",
     [
         (lambda_wrangler_function, method_runtime_variables,
-         None, "runtime_error_capture.send_sns_message",
+         None, "runtime_error_capture.RuntimeSchema",
          "'Exception'", test_generic_library.wrangler_assert)
     ])
 def test_general_error(which_lambda, which_runtime_variables,
@@ -72,6 +69,15 @@ def test_key_error(which_lambda, which_environment_variables,
     test_generic_library.key_error(which_lambda, which_environment_variables,
                                    expected_message, assertion)
 
+
+@pytest.mark.parametrize(
+    "which_lambda,expected_message,assertion,which_runtime_variables",
+    [(lambda_wrangler_function,
+      "Error validating environment parameters",
+        test_generic_library.wrangler_assert, method_runtime_variables)])
+def test_value_error(which_lambda, expected_message, assertion, which_runtime_variables):
+    test_generic_library.value_error(which_lambda, expected_message, assertion,
+                                     runtime_variables=method_runtime_variables)
 
 ##########################################################################################
 #                                     Specific                                           #
@@ -136,17 +142,45 @@ def test_runtime_error_capture(which_lambda, which_runtime_variables, expected_m
     ])
 def test_runtime_error_capture_success(mock_client, which_lambda,
                                        which_runtime_variables, expected_msg):
-    """
-    :param mock_client: Mocked boto3 client.
-    :param which_lambda: runtime_error_capture
-    :param which_runtime_variables: runtime variables declared at start.
-    :param expected_msg: What the topic name should contain.
-    :return:
-    """
 
     with mock.patch("runtime_error_capture.send_sns_message") as mocked_sns_queue:
         mocked_sns_queue.return_value = "NotARealSNS"
-        lambda_wrangler_function.lambda_handler(which_runtime_variables, None)
+        which_lambda.lambda_handler(which_runtime_variables, None)
         response = mocked_sns_queue.call_args
 
     assert expected_msg in response[0][0]
+
+
+"""
+# This doesn't work as it triggers a marshmallow error and there is no marshmallow.
+@mock_sns
+@mock.patch("runtime_error_capture.boto3.client")
+@pytest.mark.parametrize(
+    "which_lambda,expected_message,assertion,which_runtime_variables",
+    [(lambda_wrangler_function,
+      "Error validating environment parameters",
+      test_generic_library.method_assert,
+      method_runtime_variables)])
+def test_value_error(mock_client, which_lambda, expected_message, assertion,
+                     which_runtime_variables):
+    with mock.patch("runtime_error_capture.send_sns_message") as mocked_sqs_queue:
+        mocked_sqs_queue.return_value = "NotARealSQS"
+        with mock.patch("runtime_error_capture.lambda_handler") as mocked_sns_queue:
+            mocked_sns_queue.return_value = "NotARealSNS"
+            test_generic_library.value_error(which_lambda, expected_message, assertion,
+                                             runtime_variables=which_runtime_variables)
+
+
+
+
+@mock_sqs
+@pytest.mark.parametrize(
+    "which_lambda,expected_message,assertion,which_runtime_variables",
+    [(lambda_wrangler_function,
+      "Error validating environment parameters",
+      test_generic_library.wrangler_assert, incomplete_runtime_variables)])
+def test_value_error(which_lambda, expected_message, assertion, which_runtime_variables):
+    test_generic_library.value_error(
+        which_lambda, expected_message, assertion,
+        runtime_variables=which_runtime_variables)
+"""
