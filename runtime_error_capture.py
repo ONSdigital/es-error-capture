@@ -14,9 +14,9 @@ class RuntimeSchema(Schema):
         logging.error(f"Error validating environment params: {e}")
         raise ValueError(f"Error validating environment params: {e}")
 
+    error = fields.Dict(required=True)
     queue_url = fields.Str(required=True)
     sns_topic_arn = fields.Str(required=True)
-    error = fields.Dict(required=True)
 
 
 def lambda_handler(event, context):
@@ -46,7 +46,7 @@ def lambda_handler(event, context):
         runtime_error_message = error["Cause"]
         logger.info("Retrieved error message")
 
-        # send on to sns
+        # call send on to sns
         send_sns_message(runtime_error_message, sns_topic_arn)
         logger.info("Sent error to sns topic")
 
