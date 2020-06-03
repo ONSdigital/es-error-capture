@@ -84,8 +84,8 @@ def test_key_error(which_lambda, which_environment_variables,
 @pytest.mark.parametrize(
     "which_lambda,expected_message,assertion,which_runtime_variables",
     [(lambda_wrangler_function,
-      "Error validating environment parameters",
-        test_generic_library.wrangler_assert, bad_runtime_variables)])
+      "Error validating environment params",
+        test_generic_library.method_assert, bad_runtime_variables)])
 def test_value_error(which_lambda, expected_message, assertion, which_runtime_variables):
     test_generic_library.value_error(which_lambda, expected_message, assertion,
                                      runtime_variables=bad_runtime_variables)
