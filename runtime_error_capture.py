@@ -18,6 +18,7 @@ class RuntimeSchema(Schema):
     sns_topic_arn = fields.Str(required=True)
     error = fields.Dict(required=True)
 
+
 def lambda_handler(event, context):
     current_module = "Error Capture"
     # Define run_id outside of try block
