@@ -1,8 +1,8 @@
 from unittest import mock
-import pytest
 
 import boto3
-from es_aws_functions import exception_classes, test_generic_library
+import pytest
+from es_aws_functions import test_generic_library
 from moto import mock_sns, mock_sqs
 
 import runtime_error_capture as lambda_wrangler_function
