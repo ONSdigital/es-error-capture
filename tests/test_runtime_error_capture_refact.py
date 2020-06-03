@@ -21,6 +21,17 @@ method_runtime_variables = {
     "RuntimeVariables": {}
 }
 
+bad_runtime_variables = {
+    "run_id": "bob",
+    "sns_topic_arn": "",
+    "queue_url": "",
+    "error": {
+        "Error": "LambdaFailure",
+        "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested_for_error]}"
+    }
+}
+
+
 ##########################################################################################
 #                                     Generic                                            #
 ##########################################################################################
@@ -77,7 +88,7 @@ def test_key_error(which_lambda, which_environment_variables,
         test_generic_library.wrangler_assert, method_runtime_variables)])
 def test_value_error(which_lambda, expected_message, assertion, which_runtime_variables):
     test_generic_library.value_error(which_lambda, expected_message, assertion,
-                                     runtime_variables=method_runtime_variables)
+                                     runtime_variables=bad_runtime_variables)
 
 ##########################################################################################
 #                                     Specific                                           #
@@ -149,38 +160,3 @@ def test_runtime_error_capture_success(mock_client, which_lambda,
         response = mocked_sns_queue.call_args
 
     assert expected_msg in response[0][0]
-
-
-"""
-# This doesn't work as it triggers a marshmallow error and there is no marshmallow.
-@mock_sns
-@mock.patch("runtime_error_capture.boto3.client")
-@pytest.mark.parametrize(
-    "which_lambda,expected_message,assertion,which_runtime_variables",
-    [(lambda_wrangler_function,
-      "Error validating environment parameters",
-      test_generic_library.method_assert,
-      method_runtime_variables)])
-def test_value_error(mock_client, which_lambda, expected_message, assertion,
-                     which_runtime_variables):
-    with mock.patch("runtime_error_capture.send_sns_message") as mocked_sqs_queue:
-        mocked_sqs_queue.return_value = "NotARealSQS"
-        with mock.patch("runtime_error_capture.lambda_handler") as mocked_sns_queue:
-            mocked_sns_queue.return_value = "NotARealSNS"
-            test_generic_library.value_error(which_lambda, expected_message, assertion,
-                                             runtime_variables=which_runtime_variables)
-
-
-
-
-@mock_sqs
-@pytest.mark.parametrize(
-    "which_lambda,expected_message,assertion,which_runtime_variables",
-    [(lambda_wrangler_function,
-      "Error validating environment parameters",
-      test_generic_library.wrangler_assert, incomplete_runtime_variables)])
-def test_value_error(which_lambda, expected_message, assertion, which_runtime_variables):
-    test_generic_library.value_error(
-        which_lambda, expected_message, assertion,
-        runtime_variables=which_runtime_variables)
-"""

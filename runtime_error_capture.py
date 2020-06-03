@@ -16,7 +16,7 @@ class RuntimeSchema(Schema):
 
     queue_url = fields.Str(required=True)
     sns_topic_arn = fields.Str(required=True)
-
+    error = fields.Dict(required=True)
 
 def lambda_handler(event, context):
     current_module = "Error Capture"
@@ -30,10 +30,10 @@ def lambda_handler(event, context):
         # Retrieve run_id before input validation
         # Because it is used in exception handling
         run_id = event["run_id"]
-        error = event["error"]
 
         # Runtime variables
         runtime_variables = RuntimeSchema().load(event)
+        error = runtime_variables["error"]
         queue_url = runtime_variables["queue_url"]
         sns_topic_arn = runtime_variables["sns_topic_arn"]
         logger.info("Validated parameters.")
