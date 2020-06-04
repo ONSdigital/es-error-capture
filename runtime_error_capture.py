@@ -6,6 +6,11 @@ from es_aws_functions import exception_classes, general_functions
 from marshmallow import EXCLUDE, Schema, fields
 
 
+class ErrorSchema(Schema):
+    Error = fields.Str(required=True)
+    Cause = fields.Str(required=True)
+
+
 class RuntimeSchema(Schema):
     class Meta:
         unknown = EXCLUDE
@@ -14,14 +19,14 @@ class RuntimeSchema(Schema):
         logging.error(f"Error validating environment params: {e}")
         raise ValueError(f"Error validating environment params: {e}")
 
-    error = fields.Dict(required=True)
     queue_url = fields.Str(required=True)
     sns_topic_arn = fields.Str(required=True)
+    error = fields.Nested(ErrorSchema)
 
 
 def lambda_handler(event, context):
     current_module = "Error Capture"
-    # Define run_id outside of try block
+    # Define run_id outside of try block.
     run_id = 0
     logger = logging.getLogger("Error Capture")
     logger.setLevel(10)
@@ -29,33 +34,33 @@ def lambda_handler(event, context):
     try:
         logger.info("Entered Error Handler")
         # Retrieve run_id before input validation
-        # Because it is used in exception handling
+        # Because it is used in exception handling.
         run_id = event["run_id"]
 
-        # Runtime variables
+        # Set up clients.
         runtime_variables = RuntimeSchema().load(event)
+        sqs = boto3.client("sqs", region_name="eu-west-2")
+
+        # Runtime variables.
         error = runtime_variables["error"]
         queue_url = runtime_variables["queue_url"]
         sns_topic_arn = runtime_variables["sns_topic_arn"]
         logger.info("Validated parameters.")
 
-        # Set up client
-        sqs = boto3.client("sqs", region_name="eu-west-2")
-
-        # Take the error message from event
+        # Take the error message from event.
         runtime_error_message = error["Cause"]
         logger.info("Retrieved error message")
 
-        # call send on to sns
+        # Call send_sns_message.
         send_sns_message(runtime_error_message, sns_topic_arn)
         logger.info("Sent error to sns topic")
 
-        # Delete queue
+        # Delete queue.
         sqs.delete_queue(QueueUrl=queue_url)
         logger.info("Deleted: " + str(queue_url))
     except Exception as e:
         error_message = general_functions.handle_exception(e, current_module,
-                                                           run_id, context,)
+                                                           run_id, context)
     finally:
         if (len(error_message)) > 0:
             logger.error(error_message)
