@@ -7,8 +7,8 @@ from marshmallow import EXCLUDE, Schema, fields
 
 
 class ErrorSchema(Schema):
-    Error = fields.Str(required=True)
     Cause = fields.Str(required=True)
+    Error = fields.Str(required=True)
 
 
 class RuntimeSchema(Schema):
@@ -19,9 +19,9 @@ class RuntimeSchema(Schema):
         logging.error(f"Error validating environment params: {e}")
         raise ValueError(f"Error validating environment params: {e}")
 
+    error = fields.Nested(ErrorSchema)
     queue_url = fields.Str(required=True)
     sns_topic_arn = fields.Str(required=True)
-    error = fields.Nested(ErrorSchema)
 
 
 def lambda_handler(event, context):
