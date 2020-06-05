@@ -37,15 +37,17 @@ def lambda_handler(event, context):
         # Because it is used in exception handling.
         run_id = event["run_id"]
 
-        # Set up clients.
         runtime_variables = RuntimeSchema().load(event)
+        logger.info("Validated parameters")
+
+        # Set up client.
         sqs = boto3.client("sqs", region_name="eu-west-2")
 
         # Runtime variables.
         error = runtime_variables["error"]
         queue_url = runtime_variables["queue_url"]
         sns_topic_arn = runtime_variables["sns_topic_arn"]
-        logger.info("Validated parameters.")
+        logger.info("Retrieved configuration variables")
 
         # Take the error message from event.
         runtime_error_message = error["Cause"]
