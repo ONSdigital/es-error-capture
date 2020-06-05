@@ -16,8 +16,8 @@ class RuntimeSchema(Schema):
         unknown = EXCLUDE
 
     def handle_error(self, e, data, **kwargs):
-        logging.error(f"Error validating environment params: {e}")
-        raise ValueError(f"Error validating environment params: {e}")
+        logging.error(f"Error validating runtime params: {e}")
+        raise ValueError(f"Error validating runtime params: {e}")
 
     error = fields.Nested(ErrorSchema)
     queue_url = fields.Str(required=True)
