@@ -3,14 +3,13 @@ from unittest import mock
 import boto3
 import pytest
 from es_aws_functions import test_generic_library
-from moto import mock_sns, mock_sqs
+from moto import mock_sns
 
 import runtime_error_capture as lambda_wrangler_function
 
 method_runtime_variables = {
     "run_id": "bob",
     "sns_topic_arn": "topic_arn",
-    "queue_url": "mock_url",
     "error": {
         "Error": "LambdaFailure",
         "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested_for_error]}"
@@ -20,7 +19,6 @@ method_runtime_variables = {
 
 bad_runtime_variables = {
     "run_id": "bob",
-    "sns_topic_arn": "",
     "error": {
         "Error": "LambdaFailure",
         "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested_for_error]}"
@@ -100,45 +98,6 @@ def test_send_sns_message():
     assert(result["ResponseMetadata"]["HTTPStatusCode"] == 200)
 
 
-@mock_sns
-@mock_sqs
-@pytest.mark.parametrize(
-    "which_lambda,which_runtime_variables,expected_message",
-    [
-        (lambda_wrangler_function, method_runtime_variables,
-         "The specified queue does not exist")
-    ])
-def test_runtime_error_capture(which_lambda, which_runtime_variables, expected_message):
-    sqs = boto3.client("sqs", region_name="eu-west-2")
-    sqs.create_queue(QueueName="test_queue")
-    queue_url = sqs.get_queue_url(QueueName="test_queue")["QueueUrl"]
-    which_runtime_variables["queue_url"] = queue_url
-
-    sqs.send_message(
-        QueueUrl=queue_url,
-        MessageBody="moo",
-        MessageGroupId="123",
-        MessageDeduplicationId="666"
-    )
-    sns = boto3.client("sns", region_name="eu-west-2")
-    topic = sns.create_topic(Name="bloo")
-    topic_arn = topic["TopicArn"]
-
-    which_runtime_variables["sns_topic_arn"] = topic_arn
-
-    which_lambda.lambda_handler(which_runtime_variables, "")
-    error = ''
-    try:
-        sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=10)
-    except Exception as e:
-        error = e.args
-        # Extract e for use in finally block
-        # so if it doesnt throw exception test will fail
-    finally:
-        assert expected_message in str(error)
-
-
-@mock_sqs
 @mock.patch("runtime_error_capture.boto3.client")
 @pytest.mark.parametrize(
     "which_lambda,which_runtime_variables,expected_msg",

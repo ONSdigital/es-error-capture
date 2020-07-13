@@ -19,8 +19,7 @@ class RuntimeSchema(Schema):
         logging.error(f"Error validating runtime params: {e}")
         raise ValueError(f"Error validating runtime params: {e}")
 
-    error = fields.Nested(ErrorSchema)
-    queue_url = fields.Str(required=True)
+    error = fields.Nested(ErrorSchema, required=True)
     sns_topic_arn = fields.Str(required=True)
 
 
@@ -40,12 +39,8 @@ def lambda_handler(event, context):
         runtime_variables = RuntimeSchema().load(event)
         logger.info("Validated parameters")
 
-        # Set up client.
-        sqs = boto3.client("sqs", region_name="eu-west-2")
-
         # Runtime variables.
         error = runtime_variables["error"]
-        queue_url = runtime_variables["queue_url"]
         sns_topic_arn = runtime_variables["sns_topic_arn"]
         logger.info("Retrieved configuration variables")
 
@@ -57,9 +52,6 @@ def lambda_handler(event, context):
         send_sns_message(runtime_error_message, sns_topic_arn)
         logger.info("Sent error to sns topic")
 
-        # Delete queue.
-        sqs.delete_queue(QueueUrl=queue_url)
-        logger.info("Deleted: " + str(queue_url))
     except Exception as e:
         error_message = general_functions.handle_exception(e, current_module,
                                                            run_id, context)
