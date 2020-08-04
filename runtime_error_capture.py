@@ -27,8 +27,7 @@ def lambda_handler(event, context):
     current_module = "Error Capture"
     # Define run_id outside of try block.
     run_id = 0
-    logger = logging.getLogger("Error Capture")
-    logger.setLevel(10)
+    logger = general_functions.get_logger()
     error_message = ''
     try:
         logger.info("Entered Error Handler")
