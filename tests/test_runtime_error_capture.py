@@ -8,7 +8,7 @@ from moto import mock_sns
 import runtime_error_capture as lambda_wrangler_function
 
 method_runtime_variables = {
-    "RuntimeVariables":{
+    "RuntimeVariables": {
         "run_id": "bob",
         "sns_topic_arn": "topic_arn",
         "error": {
