@@ -33,9 +33,9 @@ def lambda_handler(event, context):
         logger.info("Entered Error Handler")
         # Retrieve run_id before input validation
         # Because it is used in exception handling.
-        run_id = event["run_id"]
+        run_id = event['RuntimeVariables']["run_id"]
 
-        runtime_variables = RuntimeSchema().load(event)
+        runtime_variables = RuntimeSchema().load(event['RuntimeVariables'])
         logger.info("Validated parameters")
 
         # Runtime variables.

@@ -8,20 +8,23 @@ from moto import mock_sns
 import runtime_error_capture as lambda_wrangler_function
 
 method_runtime_variables = {
-    "run_id": "bob",
-    "sns_topic_arn": "topic_arn",
-    "error": {
-        "Error": "LambdaFailure",
-        "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested_for_error]}"
-    },
-    "RuntimeVariables": {}
+    "RuntimeVariables": {
+        "run_id": "bob",
+        "sns_topic_arn": "topic_arn",
+        "error": {
+            "Error": "LambdaFailure",
+            "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested_for_error]}"
+        },
+    }
 }
 
 bad_runtime_variables = {
-    "run_id": "bob",
-    "error": {
-        "Error": "LambdaFailure",
-        "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested_for_error]}"
+    "RuntimeVariables": {
+        "run_id": "bob",
+        "error": {
+            "Error": "LambdaFailure",
+            "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested_for_error]}"
+        }
     }
 }
 
