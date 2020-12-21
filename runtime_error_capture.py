@@ -19,9 +19,9 @@ class RuntimeSchema(Schema):
         logging.error(f"Error validating runtime params: {e}")
         raise ValueError(f"Error validating runtime params: {e}")
 
+    environment = fields.Str(required=True)
     error = fields.Nested(ErrorSchema, required=True)
     sns_topic_arn = fields.Str(required=True)
-    environment = fields.Str(required=True)
     survey = fields.Str(required=True)
 
 
@@ -37,9 +37,9 @@ def lambda_handler(event, context):
 
         runtime_variables = RuntimeSchema().load(event['RuntimeVariables'])
         # Runtime variables.
+        environment = runtime_variables["environment"]
         error = runtime_variables["error"]
         sns_topic_arn = runtime_variables["sns_topic_arn"]
-        environment = runtime_variables["environment"]
         survey = runtime_variables["survey"]
 
     except Exception as e:

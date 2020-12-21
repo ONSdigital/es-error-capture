@@ -9,14 +9,14 @@ import runtime_error_capture as lambda_wrangler_function
 
 method_runtime_variables = {
     "RuntimeVariables": {
-        "run_id": "bob",
-        "sns_topic_arn": "topic_arn",
         "environment": "sandbox",
-        "survey": "BMI_SG",
         "error": {
             "Error": "LambdaFailure",
             "Cause": "{\"errorMessage\": \"<class 'ValueError'> tested_for_error]}"
         },
+        "run_id": "bob",
+        "sns_topic_arn": "topic_arn",
+        "survey": "BMI_SG",
     }
 }
 
